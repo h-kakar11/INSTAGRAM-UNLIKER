@@ -1,118 +1,242 @@
-# Instagram Like Remover
+# Instagram Unliker
 
-A Chrome/Edge extension (Manifest V3) that removes your Instagram likes by driving Instagram's own
-**Your activity → Likes** screen: *Select → tick posts → Unlike → confirm → repeat*.
+A Chrome/Edge extension that removes your own Instagram likes in batches, using Instagram's own **Your activity → Likes** page.
 
-- No passwords, API keys or tokens. You log in to Instagram yourself, as usual.
-- Everything runs locally in your browser. No server and no dependencies.
-- It only runs on `https://www.instagram.com/*` and only asks for the `storage` permission.
-- It never bypasses CAPTCHAs, login challenges or rate limits. If Instagram shows one, the run
-  pauses and tells you to deal with it yourself.
+It clicks the same buttons you would: **Select**, tick the posts, **Unlike**, then confirm. It does this at a slow, randomized pace and stops the moment anything looks wrong.
 
-## Install (Chrome or Edge)
+- No password, API key or login automation. You log in yourself.
+- No servers or tracking. Everything runs in your browser.
+- Only one permission (`storage`), and it only runs on `www.instagram.com`.
+- No dependencies and no build step.
 
-1. Open the extensions page:
-   - Chrome: go to `chrome://extensions`
-   - Edge: go to `edge://extensions`
-2. Turn on **Developer mode** (top-right toggle in Chrome, left sidebar in Edge).
-3. Click **Load unpacked** and choose this folder (the one containing `manifest.json`).
-4. Optional: pin the extension (puzzle-piece icon → pin **Instagram Like Remover**).
-5. If Instagram was already open, **reload that tab** so the extension can attach to it.
+> **Use at your own risk.** This automates actions on your own account through Instagram's web interface. Instagram may rate-limit or challenge accounts that do many actions quickly. The extension pauses when that happens, but it cannot promise your account won't be flagged. Start small.
 
-## Use
+---
 
-1. Log in at <https://www.instagram.com> as you normally would.
-2. Open **Your activity → Likes**: <https://www.instagram.com/your_activity/interactions/likes/>
-   (the popup's **Open my Likes page** button takes you there).
-3. Click the extension icon. Adjust the settings if you like, then press **Start**.
+## Installation
 
-| Setting | Default | Meaning |
-|---|---|---|
-| Batch size | 20 | Posts ticked and unliked together in one "Unlike" action (1–100) |
-| Delay between actions | 3–8 s | Random wait before each "Unlike" and between batches (minimum 1 s). Ticking checkboxes uses a short 0.25–0.7 s gap. |
-| Max likes per run | none | Stop after removing this many in one run |
+The extension isn't in the Chrome Web Store, so you load it manually. This takes about a minute.
 
-- **Pause** stops at the next safe point and leaves selection mode. **Resume** continues the same
-  run with the same counter.
-- **Stop** ends the run. The next **Start** begins a new run; the *total* counter keeps counting.
-- You can close the popup at any time. The run lives in the Instagram tab and its state is saved,
-  so reopening the popup shows live progress. The toolbar badge also shows it: a count while
-  running, `||` when paused, `!` when it needs your attention, `✓` when finished.
-- If you press Pause/Stop after the extension has already pressed Unlike, it first waits for
-  Instagram to finish that batch, so the count stays exact. Earlier than that, it stops right away
-  and clears the half-built selection.
+1. Download this repository: **Code → Download ZIP**, then unzip it. Or clone it:
+   ```bash
+   git clone https://github.com/<your-username>/instagram-unliker.git
+   ```
+2. Open Chrome and go to `chrome://extensions`. In Edge, go to `edge://extensions`.
+3. Turn on **Developer mode** (the toggle in the top-right corner; in Edge it's on the left).
+4. Click **Load unpacked** and select the `instagram-unliker` folder, the one that contains `manifest.json`.
+5. Optional: click the puzzle-piece icon in the toolbar and **pin** Instagram Unliker so its icon is always visible.
+6. If you already had Instagram open, **reload that tab** so the extension can attach to it.
 
-### Using your PC while it runs
+**Updating:** replace the files with the new version, go back to `chrome://extensions` and click the reload icon on the extension's card. Then reload your Instagram tab.
 
-The run keeps going when you switch to other tabs or apps. After every Unlike, Instagram reloads the
-first page of your likes (18 posts) by itself, even in a background tab, so a background run keeps
-going. One limitation comes from Chrome: **hidden tabs don't render, so scrolling can't load *more*
-posts there.** In a background tab a batch is therefore capped at what's loaded (for example 18
-instead of 20). If nothing at all is loaded, the run waits (and says so in the popup) until the tab
-is visible again. For fully hands-off runs, you can also drag the Instagram tab into **its own
-window** and leave it visible (small, or on another monitor, but not minimised or fully covered).
+---
+
+## How to use it
+
+1. Log in to [instagram.com](https://www.instagram.com) as usual.
+2. Open your Likes page: <https://www.instagram.com/your_activity/interactions/likes/>. You can also click **Open my Likes page** in the extension popup.
+3. Click the extension icon to open the popup.
+4. Check the settings (see below). For your first run, set **Max likes per run** to something small like `20`.
+5. Press **Start**.
+
+You can close the popup; the run keeps going in the Instagram tab. Open the popup again at any time to see progress or to pause or stop.
+
+### Controls
+
+| Button | What it does |
+|---|---|
+| **Start** | Starts a new run. The "removed this run" counter resets to 0. |
+| **Pause** | Stops safely at the next safe point. If a batch is already being confirmed, it finishes that batch first so nothing is left half-done. |
+| **Resume** | Shown instead of Start while paused. Continues the same run with the same counter and limit. |
+| **Stop** | Ends the run. The next press of Start begins a fresh run. |
+
+### Toolbar badge
+
+The extension icon shows the status even when the popup is closed:
+
+| Badge | Meaning |
+|---|---|
+| a number | Running; the number is how many likes this run has removed |
+| `‖` | Paused |
+| `!` | Paused because something needs your attention; open the popup to see why |
+| `✓` | Finished: no liked posts left, or the run limit was reached |
+
+---
+
+## Settings
+
+All settings are saved automatically. Out-of-range values are corrected to the nearest allowed value.
+
+### Batch size
+**Default: 20. Range: 1–100.**
+
+How many posts are ticked before each **Unlike** click. Instagram removes the whole batch in one action, so a batch of 20 is one unlike action covering 20 posts.
+
+- Larger batches finish faster, but each action does more.
+- Smaller batches are gentler.
+- If the Instagram tab is in the background, a batch holds at most the posts already loaded on the page (usually 18). See [Background tabs](#background-tabs).
+
+### Delay (min – max seconds)
+**Default: 3–8 seconds. Min delay range: 1–600. Max delay: from the min delay up to 600.**
+
+Before each Unlike, the extension waits a **random** time between these two values, so the rhythm isn't robotic. A few short, random pauses are also added between individual ticks.
+
+If you're removing a lot, or Instagram has warned you before, raise these. For example, 10–30 seconds.
+
+### Max likes per run
+**Default: 0 (no limit). Range: 0 or more.**
+
+This is a safety cap. When the run has removed this many likes, it stops by itself and shows `✓`.
+
+- `0` means no limit: it keeps going until your Likes page is empty.
+- Batches are shortened to fit the cap. With a batch size of 20 and a max of 50, it removes 20, then 20, then 10, and stops.
+- The cap counts **this run only**. Pressing **Start** again begins a new run with a fresh count. **Resume** continues the same count.
+
+Use it to spread removals over several sessions, for example 100 a day, or to test with a small number first.
+
+### Counters
+
+- **Removed this run:** likes removed since you last pressed Start.
+- **Removed in total:** likes removed across all runs on this browser.
+
+---
+
+## Background tabs
+
+You can switch to other tabs while it runs. Chrome slows down background tabs, and Instagram doesn't load more posts when you scroll in a hidden tab. So in the background:
+
+- Each batch holds only the posts already loaded, usually 18.
+- After each Unlike, Instagram reloads the first page of your likes by itself, so the run normally keeps going.
+- If no posts are loaded at all, it waits until you switch back to the tab, then continues.
+
+For the fastest runs, keep the Instagram tab visible.
+
+---
 
 ## Safety behaviour
 
-The extension pauses with an explanation when any of the following happens. Apart from pressing
-**Cancel** to leave its own selection or confirmation, it then clicks nothing else, and it never
-clicks anything while an Instagram warning or an unknown dialog is open:
+The extension is designed to **stop rather than guess**. It pauses and explains why in the popup when:
 
-- the "Select" button, the checkboxes, the "N selected" counter, the Unlike button or the
-  confirmation dialog can't be found, or don't respond as expected;
-- Instagram's own "N selected" count differs from what the extension ticked;
-- Instagram shows **Try Again Later**, **Action Blocked**, "we limit how often…", "confirm it's you",
-  "unusual activity", a CAPTCHA, a login page or a challenge/checkpoint page, or an error dialog;
-- **any dialog it doesn't recognise** is open (it never clicks underneath one);
-- unliked posts don't disappear after confirming, or reappear afterwards;
-- the tab leaves the Likes page, reloads, is redirected, or is closed (you can Resume later);
-- the extension itself is reloaded (the old copy in the page goes inert immediately).
+- Instagram shows a rate-limit warning ("Try again later", "We restrict certain activity…").
+- Instagram asks you to log in, verify your account, or solve a CAPTCHA or other challenge.
+- An unexpected dialog or pop-up appears.
+- The page doesn't look the way it expects, for example because Instagram changed its layout, the page is in another language, or you navigated away.
+- The Instagram tab is reloaded, closed, or goes to a different page.
 
-Idempotency: every ticked post is verified by its thumbnail's file name. Posts already unliked in
-the current run are remembered, so they are never ticked again. A batch is recorded *before* its
-Unlike is pressed. If the run is cut off mid-batch (reload, closed tab, a warning), the next Resume
-(or Start) first asks you to reload the page if needed, then checks the freshly loaded list:
-- if the batch's posts are gone, it counts them and never touches them again;
-- if they are still listed, the unlike didn't happen, so they are still liked and are simply retried;
-- if it can't tell, it doesn't count them and doesn't touch them again in this run.
+It **never** tries to get past a CAPTCHA, login prompt, challenge or rate limit. After a problem, the only thing it may click is **Cancel** on its own "Unlike this post?" dialog. It won't touch anything else.
 
-If Instagram keeps listing posts the run already unliked, it pauses instead of clicking them twice.
-Reload and press Resume; if they are still listed, press **Stop** and then **Start**, which begins a
-fresh run that may retry them.
+**What to do when it pauses:**
+1. Read the message in the popup.
+2. Deal with whatever Instagram is showing, for example verify your account or wait a while after a rate limit.
+3. Reload the Likes page.
+4. Press **Resume**.
 
-### Limitations
+If you were rate-limited, wait at least several hours, then use a smaller batch size and longer delays.
 
-- Instagram must be in **English**. The extension matches the visible labels "Select", "Cancel",
-  "Unlike" and "N selected". In another language it simply pauses with a message.
-- The selectors were taken from Instagram's web UI in September 2026. If Instagram redesigns the
-  page, the extension pauses instead of guessing. The selectors are documented at the top of
-  `content.js`.
-- The whole flow (Select → tick → Unlike → the "Unlike this post?" confirmation → removal) was
-  verified once on the live page in September 2026. For robustness, the extension also handles a
-  confirmation without ARIA roles, and Instagram unliking without asking.
+### Never unlikes the same post twice
 
-## Test without touching your account
+- Each post is identified by its image, and the extension remembers which posts it has already handled, so it won't tick the same post again.
+- Before clicking Unlike, it saves which posts are in that batch. If the page reloads or the tab closes mid-batch, the next Resume or Start first asks you to reload the page. It then checks what Instagram actually did:
+  - If those posts are gone, the batch is counted.
+  - If they're still there, it is retried.
+  - If it can't tell, it doesn't count them and doesn't re-tick them.
+- Every tick is checked against Instagram's own "N selected" counter before Unlike is pressed. If the numbers don't match, it pauses instead of continuing.
 
-`test/e2e.mjs` loads this extension into a throwaway headless Chrome/Edge profile and drives it via
-its real popup against `test/mock-likes.html`, a copy of the Likes page's DOM served as
-`www.instagram.com` (every request is intercepted, so nothing reaches Instagram). It covers
-Start/Pause/Resume/Stop, loading more posts, the per-run limit, hidden tabs, reloads (including one
-in the middle of a batch), closed tabs, never unliking a post twice, and pausing safely on missing
-buttons, missing checkboxes, missing dialogs, rate-limit dialogs and challenge pages.
+---
+
+## Requirements and limitations
+
+- **Chrome or Edge** (any recent version that supports Manifest V3 extensions).
+- **Instagram must be in English.** The extension finds buttons by their labels ("Select", "Unlike", "Cancel", "N selected"). In another language it simply pauses with a message. You can change the language under Instagram → Settings → Language.
+- **Desktop web only**, on `www.instagram.com`.
+- **Instagram changes its site often.** If the layout changes, the extension will most likely pause with a "layout may have changed" message rather than do anything wrong. Please open an issue if that happens.
+- It only removes likes on **posts and reels** shown on the Likes page. Comment likes and story likes aren't affected.
+- Instagram may take a while to update like counts everywhere after a removal.
+
+---
+
+## Privacy
+
+- No data leaves your browser. There are no analytics, servers or network requests of the extension's own.
+- It stores only its settings, progress counters, and a list of image identifiers for posts it has already handled, in Chrome's local extension storage (`chrome.storage.local`).
+- Removing the extension deletes all of that.
+
+### Permissions
+
+| Permission | Why |
+|---|---|
+| `storage` | To save settings and progress so closing the popup doesn't stop the run |
+| Runs on `https://www.instagram.com/*` | To click the buttons on your Likes page. It runs on no other site. |
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| Popup says to open your Likes page | Open <https://www.instagram.com/your_activity/interactions/likes/> in that browser, then reload the tab. |
+| Start does nothing / "couldn't reach the page" | Reload the Instagram tab. This is needed after installing or updating the extension. |
+| "Layout may have changed" | Make sure Instagram is in English and you're on the Likes page. If it keeps happening, Instagram probably changed its layout; please open an issue. |
+| "Reload the page, then press Resume" | A batch was interrupted. Reload the Likes page so the extension can check what Instagram did, then press Resume. |
+| Paused with `!` after a warning | Instagram rate-limited you. Wait a few hours, then use smaller batches and longer delays. |
+| Slow in the background | Expected; see [Background tabs](#background-tabs). Keep the tab visible for full speed. |
+
+---
+
+## Running the tests
+
+The repository includes an automated test suite. It runs the real extension in a hidden copy of Chrome against a **fake** Likes page (`test/mock-likes.html`). It never contacts Instagram and never touches your account.
+
+It needs **Node.js 18+** and **Chrome or Edge**.
 
 ```bash
 node test/e2e.mjs
 ```
 
-It needs Node 18+ and Chrome or Edge 126+. Set `CHROME=/path/to/browser` to pick a specific browser.
+A full run takes about 12 minutes. To run only some of the scenarios, set `ONLY` to a pattern that matches their names:
 
-## Files
+```bash
+ONLY="reload|ratelimit" node test/e2e.mjs
+```
 
-| File | Role |
+To use a specific browser:
+
+```bash
+CHROME="/path/to/chrome" node test/e2e.mjs
+```
+
+On Windows PowerShell, set the variable first:
+
+```powershell
+$env:ONLY = "ratelimit"; node test/e2e.mjs
+```
+
+The scenarios cover:
+- Start, Pause, Resume and Stop, and the settings limits.
+- Scrolling to load more posts, and the max-per-run cap.
+- Rate limits, challenges and CAPTCHAs, and missing or changed buttons.
+- Page reloads and tab closes mid-batch, and background tabs.
+
+---
+
+## Project files
+
+| File | Purpose |
 |---|---|
-| `manifest.json` | MV3 manifest: `storage` permission, content script on `www.instagram.com` |
-| `content.js` | The automation: finds UI elements, ticks, unlikes, verifies, pauses safely |
-| `popup.html` / `popup.js` | Controls, settings, live status and progress |
-| `background.js` | Toolbar badge; marks a run paused if its tab closes, reloads or navigates away, or the browser restarts |
-| `shared.js` | Settings defaults/validation and the Likes URL (used by popup and content script) |
-| `test/` | Mock Likes page and the end-to-end test (not needed to use the extension) |
+| `manifest.json` | Extension manifest (Manifest V3) |
+| `content.js` | The automation that runs on the Instagram Likes page |
+| `shared.js` | Default settings and their allowed ranges |
+| `background.js` | Toolbar badge; notices when the Instagram tab closes or reloads |
+| `popup.html` / `popup.js` | The popup: controls, settings, progress |
+| `test/mock-likes.html` | Fake Likes page used by the tests |
+| `test/e2e.mjs` | Automated end-to-end tests |
+
+---
+
+## Disclaimer
+
+This project is not affiliated with, endorsed by, or connected to Instagram or Meta. "Instagram" is a trademark of Meta Platforms, Inc. Use this tool responsibly and in line with Instagram's Terms of Use. You are responsible for actions taken on your account.
+
+## License
+
+MIT 
