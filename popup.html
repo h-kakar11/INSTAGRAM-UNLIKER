@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Instagram Like Remover</title>
+  <style>
+    :root {
+      --bg: #ffffff; --fg: #111418; --muted: #667085; --line: #e4e7ec; --field: #f5f6f8;
+      --accent: #0a66f0; --accent-fg: #ffffff; --ok: #16a34a; --warn: #d97706; --bad: #dc2626; --idle: #98a2b3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #16181c; --fg: #eceef1; --muted: #98a2b3; --line: #2c3036; --field: #1f2227; --accent: #3b82f6; }
+    }
+    * { box-sizing: border-box; }
+    body { width: 320px; margin: 0; padding: 16px; background: var(--bg); color: var(--fg);
+           font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    h1 { font-size: 15px; margin: 0; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12px; }
+    .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dot, var(--idle)); }
+    body[data-status="running"] { --dot: var(--ok); }
+    body[data-status="paused"] { --dot: var(--warn); }
+    body[data-status="done"] { --dot: var(--accent); }
+    body[data-status="error"] { --dot: var(--bad); }
+    #message { min-height: 38px; margin: 0 0 12px; color: var(--muted); overflow-wrap: anywhere; }
+    body[data-status="error"] #message { color: var(--bad); }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .stat { background: var(--field); border-radius: 8px; padding: 8px 10px; }
+    .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+    .stat span { color: var(--muted); font-size: 12px; }
+    .buttons { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    button { font: inherit; font-weight: 600; padding: 8px 0; border-radius: 8px; cursor: pointer;
+             border: 1px solid var(--line); background: var(--field); color: var(--fg); }
+    button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+    button:disabled { opacity: .45; cursor: default; }
+    fieldset { border: 0; border-top: 1px solid var(--line); margin: 0; padding: 12px 0 0; display: grid; gap: 8px; }
+    label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    input { width: 64px; padding: 5px 6px; font: inherit; text-align: right; color: var(--fg);
+            background: var(--field); border: 1px solid var(--line); border-radius: 6px; }
+    .range { display: flex; align-items: center; gap: 4px; color: var(--muted); }
+    .range input { width: 48px; }
+    #hint { margin-top: 12px; padding: 10px; border-radius: 8px; background: var(--field); }
+    #hint p { margin: 0 0 8px; }
+    #hint button { width: 100%; }
+  </style>
+</head>
+<body data-status="idle">
+  <header>
+    <h1>Like Remover</h1>
+    <span class="pill" id="status">Ready</span>
+  </header>
+  <p id="message"></p>
+
+  <div class="stats">
+    <div class="stat"><b><span id="removed">0</span><small id="limit"></small></b><span>removed this run</span></div>
+    <div class="stat"><b id="total">0</b><span>removed in total</span></div>
+  </div>
+
+  <div class="buttons">
+    <button id="start" class="primary" disabled>Start</button>
+    <button id="pause" disabled>Pause</button>
+    <button id="stop" disabled>Stop</button>
+  </div>
+
+  <fieldset>
+    <label>Batch size <input id="batchSize" type="number" min="1" max="100" step="1"></label>
+    <label>Delay between actions (s)
+      <span class="range"><input id="minDelay" type="number" min="1" max="600" step="0.5">–<input id="maxDelay" type="number" min="1" max="600" step="0.5"></span>
+    </label>
+    <label>Max likes per run <input id="maxPerRun" type="number" min="0" step="1" placeholder="none"></label>
+  </fieldset>
+
+  <div id="hint" hidden>
+    <p id="hintText"></p>
+    <button id="open">Open my Likes page</button>
+  </div>
+
+  <script src="shared.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

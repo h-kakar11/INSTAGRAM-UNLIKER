@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Instagram Like Remover",
+  "version": "1.0.0",
+  "description": "Removes your Instagram likes through Instagram's own web UI (Your activity → Likes). Runs locally in your browser.",
+  "permissions": ["storage"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Instagram Like Remover",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["shared.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
