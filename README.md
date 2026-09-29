@@ -4,7 +4,7 @@ A Chrome/Edge extension that removes your own Instagram likes in batches, using 
 
 It clicks the same buttons you would: **Select**, tick the posts, **Unlike**, then confirm. It does this at a slow, randomized pace and stops the moment anything looks wrong.
 
-- No password, API key or login automation. You log in yourself.
+- No password, API key or login automation. You log in yourself, on the browser.
 - No servers or tracking. Everything runs in your browser.
 - Only one permission (`storage`), and it only runs on `www.instagram.com`.
 - No dependencies and no build step.
