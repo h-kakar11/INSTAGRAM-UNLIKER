@@ -5,6 +5,9 @@
 //
 //   Select → tick up to N posts → Unlike → confirm → wait until they disappear → repeat
 //
+// Instagram's page freezes on an endless loading screen after about an hour, so a page that has been open
+// for REFRESH_AFTER is hard-reloaded between two batches and the run carries on by itself (see refreshPage).
+//
 // SELECTORS. Taken from the live Likes page (Sep 2026). The screen is rendered by Instagram's
 // "Bloks" framework, whose class names (wbloks_1, wbloks_94…) are generated and meaningless, so
 // nothing here uses classes. Instead:
@@ -35,6 +38,7 @@ const THUMB = '[role="button"][aria-label*="@"] img'; // post tile thumbnails ("
 const SPINNER = '[aria-label="Loading..."]';
 const DIALOG = '[role="dialog"], [role="alertdialog"], [aria-modal="true"]';
 const NON_EMPTY = '[data-testid="liked_container_non_empty_state"]';
+const REFRESH_AFTER = 45 * 60 * 1000; // how old the page may get before it is hard-reloaded
 
 // Text Instagram shows when it blocks, limits or challenges an account (checked on the whole page)…
 const BLOCKED = [
@@ -78,7 +82,8 @@ async function command(msg) {
       looping = true; // claim the loop before any await, so a double-click can't start two
       try {
         const { state: prev = {} } = await chrome.storage.local.get('state');
-        const resume = msg.resume && prev.status === 'paused';
+        // A run whose page is being refreshed is still 'running' when the background resumes it (see refreshPage).
+        const resume = msg.resume && (prev.status === 'paused' || prev.status === 'running');
         // A new run still settles an unverified batch first (see settlePending), so a Stop + Start can
         // never re-tick posts that Instagram may already have unliked.
         state = resume ? { ...prev }
@@ -138,10 +143,24 @@ async function loop() {
     const settings = normalizeSettings((await chrome.storage.local.get('settings')).settings);
     const left = settings.maxPerRun ? settings.maxPerRun - state.removed : Infinity;
     if (left <= 0) return `Reached this run's limit of ${settings.maxPerRun}.`;
+    if (Date.now() - performance.timeOrigin >= REFRESH_AFTER) await refreshPage();
     if (!first) await wait(settings, 'Next batch in');
     const removed = await unlikeBatch(Math.min(settings.batchSize, left), settings);
     if (!removed) return 'No more liked posts found. All done!';
   }
+}
+
+// Hard-reload this page (the same as Ctrl+Shift+R). Only called between two batches, when nothing is
+// selected, pending or open, so the reload can't interrupt an Unlike. A content script can't reload with the
+// cache bypassed, so the background does it, then resumes this run in the reloaded page. Never returns normally:
+// the reload ends this page, and if it doesn't happen the run pauses with an explanation.
+async function refreshPage() {
+  await say('Refreshing the page (hard reload) so Instagram doesn\'t freeze. The run continues by itself…');
+  const reply = await chrome.runtime.sendMessage({ cmd: 'refresh' }).catch(() => null);
+  if (reply && !reply.ok) throw new Problem(`Could not refresh the page (${reply.error}). Reload it yourself, then press Resume.`);
+  await delay(30000); // Pause/Stop can still end the wait
+  checkpoint();
+  throw new Problem('The page did not reload when asked to. Reload it yourself, then press Resume.');
 }
 
 // The previous batch was sent to Instagram but never verified (the page reloaded, the tab closed,
@@ -190,7 +209,9 @@ async function unlikeBatch(limit, settings) {
     return 0;
   }
 
-  // Cross-check against Instagram's own counter before doing anything irreversible.
+  // Cross-check against Instagram's own counter before doing anything irreversible. The counter can trail
+  // the last tick by a moment, so let it catch up before calling a difference a mismatch.
+  await waitForDom(() => selectedCount() === keys.length, 3000);
   const counted = selectedCount();
   if (counted !== keys.length) {
     throw new Problem(`Instagram shows ${counted ?? 'no'} selected, but the extension ticked ${keys.length}. Paused to be safe.`);
@@ -302,14 +323,14 @@ async function selectPosts(limit, skip) {
 
     toggleOf(next.box).click();
     // The tile is re-rendered on every toggle, so look it up again by key.
-    const ok = await waitFor(() => ticked(findPost(next.key)?.box), 5000);
+    const ok = await waitForDom(() => ticked(findPost(next.key)?.box), 5000);
     if (!ok) {
       if (picked.length) break; // e.g. Instagram's own selection limit: go ahead with what we have
       throw new Problem('Clicked a checkbox but it did not tick. Instagram\'s layout may have changed.');
     }
     picked.push(next.key);
     await say(`Selecting posts: ${picked.length}/${limit}`);
-    await delay(rand(250, 700), false);
+    await delay(rand(30, 90), false);
   }
   return picked;
 }
@@ -550,6 +571,22 @@ async function waitFor(fn, ms, failMessage, interruptible = true) {
     }
     await delay(300, interruptible);
   }
+}
+
+// Like waitFor, but checks `fn` right after every change to the page instead of every 300 ms, so it returns
+// as soon as Instagram has re-rendered. Resolves true, or false after `ms`. Not interruptible: for short waits.
+function waitForDom(fn, ms) {
+  return new Promise((resolve) => {
+    const finish = (value) => {
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const observer = new MutationObserver(() => fn() && finish(true));
+    const timer = setTimeout(() => finish(false), ms);
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+    if (fn()) finish(true);
+  });
 }
 
 // Every timer starts from a fresh MessageChannel task. Chrome's "intensive throttling" of hidden
