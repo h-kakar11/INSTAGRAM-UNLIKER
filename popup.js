@@ -102,15 +102,17 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 (async () => {
-  const stored = await chrome.storage.local.get(['state', 'settings']);
+  const stored = await chrome.storage.local.get(['state', 'settings', 'refreshUntil']);
   state = stored.state || {};
   settings = normalizeSettings(stored.settings);
   showSettings();
   render();
   target = await findTarget();
   searched = true;
-  // Storage says "running" but no tab is actually running it (tab closed/reloaded unnoticed).
-  if (state.status === 'running' && !(target?.tabId === state.tabId && target.looping)) {
+  // Storage says "running" but no tab is actually running it (tab closed/reloaded unnoticed). Not while the
+  // page is being refreshed on purpose: the run continues by itself once it is back (see background.js).
+  const refreshing = stored.refreshUntil > Date.now();
+  if (state.status === 'running' && !refreshing && !(target?.tabId === state.tabId && target.looping)) {
     await setState({ status: 'paused', error: false,
       message: 'The run was interrupted (the Instagram tab was closed or reloaded). Open your Likes page and press Resume.' });
   }

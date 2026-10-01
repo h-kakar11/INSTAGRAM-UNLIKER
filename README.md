@@ -79,7 +79,7 @@ How many posts are ticked before each **Unlike** click. Instagram removes the wh
 ### Delay (min – max seconds)
 **Default: 3–8 seconds. Min delay range: 1–600. Max delay: from the min delay up to 600.**
 
-Before each Unlike, the extension waits a **random** time between these two values, so the rhythm isn't robotic. A few short, random pauses are also added between individual ticks.
+Before each Unlike, the extension waits a **random** time between these two values, so the rhythm isn't robotic. Posts themselves are ticked quickly, a fraction of a second apart with a little randomness, so choosing a batch takes only a few seconds. Only the wait before the Unlike uses the delay above.
 
 If you're removing a lot, or Instagram has warned you before, raise these. For example, 10–30 seconds.
 
@@ -113,6 +113,18 @@ For the fastest runs, keep the Instagram tab visible.
 
 ---
 
+## Auto-refresh
+
+After about an hour, Instagram's page can get stuck on an endless loading screen. To avoid that, the extension refreshes the page by itself, so a long run can be left on autopilot:
+
+- Once the Instagram tab has been open for **45 minutes**, the extension does a **hard refresh** (the same as `Ctrl`+`Shift`+`R`: the page is reloaded without using the browser's cache) and then **continues the run by itself**. The counters and the limit carry on as if nothing happened.
+- It refreshes only **between two batches**, when nothing is selected and no Unlike is in progress, so a refresh can never interrupt an unlike.
+- It only happens while a run is going; a paused or stopped run is never touched. The 45 minutes count from when the page was loaded, so if the tab has already been open that long, the first refresh comes right after you press Start or Resume.
+- If the page doesn't come back normally (for example, Instagram asks you to log in again), the run pauses and the popup explains why, like any other problem.
+- If the tab is in the background when it refreshes, Instagram may not load your list until you switch back to the tab (see [Background tabs](#background-tabs)). For unattended runs, keep the tab visible, for example in its own window that isn't minimised.
+
+---
+
 ## Safety behaviour
 
 The extension is designed to **stop rather than guess**. It pauses and explains why in the popup when:
@@ -121,7 +133,7 @@ The extension is designed to **stop rather than guess**. It pauses and explains 
 - Instagram asks you to log in, verify your account, or solve a CAPTCHA or other challenge.
 - An unexpected dialog or pop-up appears.
 - The page doesn't look the way it expects, for example because Instagram changed its layout, the page is in another language, or you navigated away.
-- The Instagram tab is reloaded, closed, or goes to a different page.
+- The Instagram tab is reloaded (other than by the extension's own [auto-refresh](#auto-refresh)), closed, or goes to a different page.
 
 It **never** tries to get past a CAPTCHA, login prompt, challenge or rate limit. After a problem, the only thing it may click is **Cancel** on its own "Unlike this post?" dialog. It won't touch anything else.
 
@@ -180,6 +192,7 @@ If you were rate-limited, wait at least several hours, then use a smaller batch 
 | "Reload the page, then press Resume" | A batch was interrupted. Reload the Likes page so the extension can check what Instagram did, then press Resume. |
 | Paused with `!` after a warning | Instagram rate-limited you. Wait a few hours, then use smaller batches and longer delays. |
 | Slow in the background | Expected; see [Background tabs](#background-tabs). Keep the tab visible for full speed. |
+| The page reloaded by itself | That's the [auto-refresh](#auto-refresh) after 45 minutes. The run continues on its own; there is nothing to do. |
 
 ---
 
@@ -226,7 +239,7 @@ The scenarios cover:
 | `manifest.json` | Extension manifest (Manifest V3) |
 | `content.js` | The automation that runs on the Instagram Likes page |
 | `shared.js` | Default settings and their allowed ranges |
-| `background.js` | Toolbar badge; notices when the Instagram tab closes or reloads |
+| `background.js` | Toolbar badge; notices when the Instagram tab closes or reloads; does the auto-refresh reload |
 | `popup.html` / `popup.js` | The popup: controls, settings, progress |
 | `test/mock-likes.html` | Fake Likes page used by the tests |
 | `test/e2e.mjs` | Automated end-to-end tests |
